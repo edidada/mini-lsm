@@ -14,7 +14,7 @@
 
 use std::fs::{File, OpenOptions};
 use std::hash::Hasher;
-use std::io::{BufWriter, Read, Write};
+use std::io::{BufWriter, Read, Seek, SeekFrom, Write};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -48,7 +48,6 @@ impl Wal {
         let mut file = OpenOptions::new()
             .read(true)
             .write(true)
-            .append(true)
             .open(path)
             .context("failed to recover from WAL")?;
         let mut buf = Vec::new();
@@ -102,6 +101,8 @@ impl Wal {
             eprintln!("warning: ignoring incomplete WAL record at byte offset {valid_len}");
             file.set_len(valid_len as u64)
                 .context("failed to truncate incomplete WAL tail")?;
+            file.seek(SeekFrom::End(0))
+                .context("failed to seek to end of WAL")?;
             file.sync_all()
                 .context("failed to sync truncated WAL tail")?;
         }

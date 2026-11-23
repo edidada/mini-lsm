@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use std::fs::{File, OpenOptions};
-use std::io::{Read, Write};
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -53,7 +53,6 @@ impl Manifest {
         let mut file = OpenOptions::new()
             .read(true)
             .write(true)
-            .append(true)
             .open(path)
             .context("failed to recover manifest")?;
         let mut buf = Vec::new();
@@ -113,6 +112,8 @@ impl Manifest {
             eprintln!("warning: ignoring incomplete manifest frame at byte offset {valid_len}");
             file.set_len(valid_len as u64)
                 .context("failed to truncate incomplete manifest tail")?;
+            file.seek(SeekFrom::End(0))
+                .context("failed to seek to end of manifest")?;
             file.sync_all()
                 .context("failed to sync truncated manifest tail")?;
         }
