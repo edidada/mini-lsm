@@ -150,19 +150,42 @@ impl BlockMeta {
 /// A file object.
 pub struct FileObject(Option<File>, u64);
 
+#[cfg(unix)]
+fn read_at(file: &File, buf: &mut [u8], offset: u64) -> std::io::Result<()> {
+    use std::os::unix::fs::FileExt;
+    file.read_exact_at(buf, offset)
+}
+
+#[cfg(windows)]
+fn read_at(file: &File, buf: &mut [u8], offset: u64) -> std::io::Result<()> {
+    use std::os::windows::fs::FileExt;
+    let mut filled = 0usize;
+    while filled < buf.len() {
+        let n = file.seek_read(&mut buf[filled..], offset + filled as u64)?;
+        if n == 0 {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::UnexpectedEof,
+                "failed to fill whole buffer",
+            ));
+        }
+        filled += n;
+    }
+    Ok(())
+}
+
 impl FileObject {
     pub fn read(&self, offset: u64, len: u64) -> Result<Vec<u8>> {
-        use std::os::unix::fs::FileExt;
         let end = offset
             .checked_add(len)
             .context("file read range overflow")?;
         ensure!(end <= self.1, "file read range is out of bounds");
         let len = usize::try_from(len).context("file read is too large")?;
         let mut data = vec![0; len];
-        self.0
+        let file = self
+            .0
             .as_ref()
-            .context("cannot read a metadata-only file object")?
-            .read_exact_at(&mut data[..], offset)?;
+            .context("cannot read a metadata-only file object")?;
+        read_at(file, &mut data, offset)?;
         Ok(data)
     }
 

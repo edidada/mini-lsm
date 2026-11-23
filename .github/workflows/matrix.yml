@@ -1,0 +1,42 @@
+name: CI (all platforms)
+
+on:
+  push:
+    branches:
+      - "edidada/main"
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_NET_RETRY: 10
+
+jobs:
+  build-test:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-22.04
+          - ubuntu-24.04
+          - ubuntu-26.04
+          - macos-15
+          - macos-26
+          - macos-15-intel
+          - macos-26-intel
+          - windows-2022
+          - windows-2025
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # rust-toolchain.toml pins the toolchain; invoking cargo makes rustup install it.
+      - name: Show Rust toolchain
+        run: cargo --version
+
+      - name: Build workspace
+        run: cargo build --workspace
+
+      - name: Test workspace
+        run: cargo test --workspace
