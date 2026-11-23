@@ -713,7 +713,12 @@ impl LsmStorageInner {
     }
 
     pub(super) fn sync_dir(&self) -> Result<()> {
-        File::open(&self.path)?.sync_all()?;
+        // Windows cannot open a directory as a File (no FILE_FLAG_BACKUP_SEMANTICS
+        // through std), so directory fsync is a no-op there.
+        #[cfg(not(windows))]
+        {
+            File::open(&self.path)?.sync_all()?;
+        }
         Ok(())
     }
 
