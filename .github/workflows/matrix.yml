@@ -17,22 +17,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-22.04
-          - os: ubuntu-24.04
-          - os: ubuntu-26.04
-          # arm64 macOS runners are frequently capacity-limited and the job may be
-          # cancelled before it starts; keep them in the matrix but don't fail the
-          # whole run when that happens.
-          - os: macos-15
-            best_effort: true
-          - os: macos-latest
-            best_effort: true
-          - os: macos-15-intel
-          - os: macos-26-intel
-          - os: windows-2022
-          - os: windows-2025
-    continue-on-error: ${{ matrix.best_effort == true }}
+        # arm64 macOS images (macos-15 / macos-latest) are omitted: their runners
+        # are frequently unavailable and the jobs get cancelled before starting.
+        # Both supported macOS versions are still covered by the Intel images.
+        os:
+          - ubuntu-22.04
+          - ubuntu-24.04
+          - ubuntu-26.04
+          - macos-15-intel
+          - macos-26-intel
+          - windows-2022
+          - windows-2025
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
