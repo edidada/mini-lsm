@@ -47,6 +47,7 @@ impl Wal {
         let path = path.as_ref();
         let mut file = OpenOptions::new()
             .read(true)
+            .write(true)
             .append(true)
             .open(path)
             .context("failed to recover from WAL")?;

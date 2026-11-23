@@ -52,6 +52,7 @@ impl Manifest {
     pub fn recover(path: impl AsRef<Path>) -> Result<(Self, Vec<ManifestRecord>)> {
         let mut file = OpenOptions::new()
             .read(true)
+            .write(true)
             .append(true)
             .open(path)
             .context("failed to recover manifest")?;
