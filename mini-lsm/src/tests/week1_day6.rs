@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::{ops::Bound, sync::Arc, time::Duration};
+use std::{
+    ops::Bound,
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use bytes::Bytes;
 use tempfile::tempdir;
@@ -158,9 +162,24 @@ fn test_task2_auto_flush() {
             .unwrap();
     }
 
-    std::thread::sleep(Duration::from_millis(500));
+    // The background flush thread needs to freeze the memtable, write the SST and
+    // install it into the L0 state. A fixed sleep is racy on loaded/slow CI runners,
+    // so poll the state instead of assuming a fixed latency.
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let mut flushed = false;
+    loop {
+        {
+            // Keep the read guard scoped so the flush thread can take the write lock.
+            let state = storage.inner.state.read();
+            flushed = !state.l0_sstables.is_empty();
+        }
+        if flushed || Instant::now() >= deadline {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
 
-    assert!(!storage.inner.state.read().l0_sstables.is_empty());
+    assert!(flushed, "auto flush did not produce any L0 SST within 10s");
 }
 
 #[test]
