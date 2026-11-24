@@ -39,5 +39,8 @@ jobs:
       - name: Build workspace
         run: cargo build --workspace
 
+      - name: Build test targets (IDE-style)
+        run: cargo test --color=always --message-format=json-diagnostic-rendered-ansi --no-run --workspace --profile test
+
       - name: Test workspace
         run: cargo test --workspace
