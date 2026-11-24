@@ -3,7 +3,8 @@ name: CI (all platforms)
 on:
   push:
     branches:
-      - "edidada/main"
+      # 所有 edidada/ 开头的分支（如 edidada/main、edidada/feature-x）都跑构建 + cargo test
+      - "edidada/**"
   workflow_dispatch:
 
 env:
