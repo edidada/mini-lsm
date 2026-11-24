@@ -166,18 +166,19 @@ fn test_task2_auto_flush() {
     // install it into the L0 state. A fixed sleep is racy on loaded/slow CI runners,
     // so poll the state instead of assuming a fixed latency.
     let deadline = Instant::now() + Duration::from_secs(10);
-    let mut flushed = false;
-    loop {
+    let flushed = loop {
         {
             // Keep the read guard scoped so the flush thread can take the write lock.
             let state = storage.inner.state.read();
-            flushed = !state.l0_sstables.is_empty();
+            if !state.l0_sstables.is_empty() {
+                break true;
+            }
         }
-        if flushed || Instant::now() >= deadline {
-            break;
+        if Instant::now() >= deadline {
+            break false;
         }
         std::thread::sleep(Duration::from_millis(50));
-    }
+    };
 
     assert!(flushed, "auto flush did not produce any L0 SST within 10s");
 }
